@@ -29,12 +29,12 @@ class DefaultFirebaseOptions {
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -56,7 +56,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBiIG0Qge1nuzXT0L0K14U_kloYR84ShSg',
-    appId: '1:6306046179:android:75da99c03d8966912665d6',
+    appId: '1:6306046179:android:b34a8e5b7b91b4832665d6',
     messagingSenderId: '6306046179',
     projectId: 'fir-connection-1-4bbcd',
     databaseURL: 'https://fir-connection-1-4bbcd-default-rtdb.firebaseio.com',
@@ -65,21 +65,21 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCwaAetkEmI1WzuDvOFzJ2KVjI0fmLA1LA',
-    appId: '1:6306046179:ios:ce666cdf93420b672665d6',
+    appId: '1:6306046179:ios:812e6d984798a6ca2665d6',
     messagingSenderId: '6306046179',
     projectId: 'fir-connection-1-4bbcd',
     databaseURL: 'https://fir-connection-1-4bbcd-default-rtdb.firebaseio.com',
     storageBucket: 'fir-connection-1-4bbcd.appspot.com',
-    iosBundleId: 'com.example.firebaseConnection1',
+    iosBundleId: 'com.example.firebasePost',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCwaAetkEmI1WzuDvOFzJ2KVjI0fmLA1LA',
-    appId: '1:6306046179:ios:1bffaaf701e85ed82665d6',
+    appId: '1:6306046179:ios:18a88b7e6a814d952665d6',
     messagingSenderId: '6306046179',
     projectId: 'fir-connection-1-4bbcd',
     databaseURL: 'https://fir-connection-1-4bbcd-default-rtdb.firebaseio.com',
     storageBucket: 'fir-connection-1-4bbcd.appspot.com',
-    iosBundleId: 'com.example.firebaseConnection1.RunnerTests',
+    iosBundleId: 'com.example.firebasePost.RunnerTests',
   );
 }
