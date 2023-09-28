@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:firebase_post/models/message_model.dart';
 import 'package:firebase_post/services/db_service.dart';
 
 part 'post_event.dart';
@@ -15,6 +16,9 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<DeletePostEvent>(_deletePost);
     on<UpdatePostEvent>(_updatePost);
     on<ViewImagePostEvent>(_viewImage);
+    on<WriteCommentPostEvent>(_writeComment);
+    on<DeleteCommentPostEvent>(_deleteComment);
+    on<LikePostEvent>(_likePost);
   }
 
   void _createPost(CreatePostEvent event, Emitter emit) async {
@@ -53,6 +57,45 @@ class PostBloc extends Bloc<PostEvent, PostState> {
         event.postId, event.title, event.content, event.isPublic);
     if (result) {
       emit(UpdatePostSuccess());
+    } else {
+      emit(const PostFailure("Something error, tyr again later!!!"));
+    }
+  }
+
+  void _writeComment(WriteCommentPostEvent event, Emitter emit) async {
+    emit(PostLoading());
+    final result =
+        await DBService.writeMessage(event.postId, event.message, event.old);
+    if (result) {
+      emit(const WriteCommentPostSuccess());
+    } else {
+      emit(const PostFailure("Something error, tyr again later!!!"));
+    }
+  }
+
+  void _deleteComment(DeleteCommentPostEvent event, Emitter emit) async {
+    emit(PostLoading());
+    final result = await DBService.deleteMessage(
+      event.postId,
+      event.messageId,
+      event.old,
+    );
+    if (result) {
+      emit(const DeleteCommentPostSuccess());
+    } else {
+      emit(const PostFailure("Something error, tyr again later!!!"));
+    }
+  }
+
+  void _likePost(LikePostEvent event, Emitter emit) async {
+    emit(PostLoading());
+    final result = await DBService.likePost(
+      event.postId,
+      event.likedUserId,
+      event.oldLikedUser,
+    );
+    if (result) {
+      emit(const LikePostSuccess());
     } else {
       emit(const PostFailure("Something error, tyr again later!!!"));
     }

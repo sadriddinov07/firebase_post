@@ -22,7 +22,6 @@ class MainLoading extends MainState {
 
 class MainFailure extends MainState {
   final String message;
-
   const MainFailure(List<Post> items, this.message) : super(items);
 
   @override
@@ -39,6 +38,7 @@ class FetchDataSuccess extends MainState {
 }
 
 class SearchMainSuccess extends MainState {
+
   const SearchMainSuccess(super.items);
 
   @override
@@ -46,6 +46,7 @@ class SearchMainSuccess extends MainState {
 }
 
 class AllPublicPostSuccess extends MainState {
+
   const AllPublicPostSuccess(super.items);
 
   @override
@@ -53,6 +54,7 @@ class AllPublicPostSuccess extends MainState {
 }
 
 class MyPostSuccess extends MainState {
+
   const MyPostSuccess(super.items);
 
   @override

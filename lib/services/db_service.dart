@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_post/models/message_model.dart';
 import 'package:firebase_post/models/post_model.dart';
 import 'package:firebase_post/models/user_model.dart';
 import 'package:firebase_post/services/auth_service.dart';
 import 'package:firebase_post/services/store_service.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 
 sealed class DBService {
@@ -13,25 +14,26 @@ sealed class DBService {
 
   /// post
   static Future<bool> storePost(
-    String title,
-    String content,
-    bool isPublic,
-    File file,
-  ) async {
+      String title, String content, bool isPublic, File file) async {
     try {
       final folder = db.ref(Folder.post);
       final child = folder.push();
       final id = child.key!;
       final userId = AuthService.user.uid;
-
+      final username = AuthService.user.displayName!;
+      final imageUrl = await StoreService.uploadFile(file);
       final post = Post(
         id: id,
         title: title,
         content: content,
         userId: userId,
-        imageUrl: await StoreService.uploadFile(file),
+        username: username,
+        likes: 0,
+        likedUsers: [],
+        imageUrl: imageUrl,
         isPublic: isPublic,
         createdAt: DateTime.now(),
+        comments: [],
       );
       await child.set(post.toJson());
       return true;
@@ -44,7 +46,7 @@ sealed class DBService {
   static Future<List<Post>> readAllPost() async {
     final folder = db.ref(Folder.post);
     final data = await folder.get();
-    final json = jsonDecode(jsonEncode(data)) as Map;
+    final json = jsonDecode(jsonEncode(data.value)) as Map;
     return json.values
         .map((e) => Post.fromJson(e as Map<String, Object?>))
         .toList();
@@ -56,13 +58,16 @@ sealed class DBService {
       await fbPost.remove();
       return true;
     } catch (e) {
-      debugPrint("DB ERROR: $e");
       return false;
     }
   }
 
   static Future<bool> updatePost(
-      String postId, String title, String content, bool isPublic) async {
+    String postId,
+    String title,
+    String content,
+    bool isPublic,
+  ) async {
     try {
       final fbPost = db.ref(Folder.post).child(postId);
       await fbPost
@@ -76,10 +81,8 @@ sealed class DBService {
     }
   }
 
-  static Future<List<Post>> searchPost(
-    String text, [
-    SearchType type = SearchType.all,
-  ]) async {
+  static Future<List<Post>> searchPost(String text,
+      [SearchType type = SearchType.all]) async {
     try {
       final folder = db.ref(Folder.post);
       final event = await folder
@@ -87,11 +90,12 @@ sealed class DBService {
           .startAt(text)
           .endAt("$text\uf8ff")
           .once();
-      final json = jsonDecode(jsonEncode(event)) as Map;
+      final json = jsonDecode(jsonEncode(event.snapshot.value)) as Map;
       debugPrint("JSON: $json");
       final data = json.values
           .map((e) => Post.fromJson(e as Map<String, Object?>))
           .toList();
+
       switch (type) {
         case SearchType.all:
           return data.where((element) => element.isPublic == true).toList();
@@ -101,7 +105,7 @@ sealed class DBService {
               .toList();
       }
     } catch (e) {
-      debugPrint("DB ERROR: $e");
+      debugPrint("ERROR: $e");
       return [];
     }
   }
@@ -114,7 +118,8 @@ sealed class DBService {
       final json = jsonDecode(jsonEncode(event.snapshot.value)) as Map;
       debugPrint("JSON: $json");
       return json.values
-          .map((e) => Post.fromJson(e as Map<String, Object?>))
+          .map((e) => Post.fromJson(e as Map<String, Object?>,
+              isMe: e["userId"] == AuthService.user.uid))
           .toList();
     } catch (e) {
       debugPrint("ERROR: $e");
@@ -132,7 +137,7 @@ sealed class DBService {
       final json = jsonDecode(jsonEncode(event.snapshot.value)) as Map;
       debugPrint("JSON: $json");
       return json.values
-          .map((e) => Post.fromJson(e as Map<String, Object?>))
+          .map((e) => Post.fromJson(e as Map<String, Object?>, isMe: true))
           .toList();
     } catch (e) {
       debugPrint("ERROR: $e");
@@ -146,11 +151,7 @@ sealed class DBService {
     try {
       final folder = db.ref(Folder.user).child(uid);
       final member = Member(
-        uid: uid,
-        username: username,
-        email: email,
-        password: password,
-      );
+          uid: uid, username: username, email: email, password: password);
       await folder.set(member.toJson());
       return true;
     } catch (e) {
@@ -168,6 +169,85 @@ sealed class DBService {
     } catch (e) {
       debugPrint("DB ERROR: $e");
       return null;
+    }
+  }
+
+  /// Message
+  static Future<bool> writeMessage(
+    String postId,
+    String message,
+    List<Message> old,
+  ) async {
+    try {
+      final post = db.ref(Folder.post).child(postId);
+
+      final msg = Message(
+          id: "${old.length + 1}",
+          message: message,
+          writtenAt: DateTime.now(),
+          userId: AuthService.user.uid,
+          userImage: AuthService.user.photoURL,
+          username: AuthService.user.displayName!);
+      old.add(msg);
+
+      post.update({
+        "comments": old.map((e) => e.toJson()).toList(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint("DB ERROR: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> deleteMessage(
+    String postId,
+    String messageId,
+    List<Message> old,
+  ) async {
+    try {
+      final post = db.ref(Folder.post).child(postId);
+
+      old.removeWhere((element) => element.id == messageId);
+
+      post.update({
+        "comments": old.map((e) => e.toJson()).toList(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint("DB ERROR: $e");
+      return false;
+    }
+  }
+
+  /// Like
+  static Future<bool> likePost(
+    String postId,
+    String likedUserId,
+    List<String> oldLikedUser,
+  ) async {
+    try {
+      final folder = db.ref(Folder.post).child(postId);
+      final data = await folder.get();
+      final json = jsonDecode(jsonEncode(data.value)) as Map;
+      final oldPost = Post.fromJson(json as Map<String, Object?>);
+      if (oldLikedUser.contains(likedUserId)) {
+        debugPrint("DB Warning: User is already liked this comment");
+        oldLikedUser.remove(likedUserId);
+        folder.update({
+          "likes": oldPost.likes - 1,
+          "likedUsers": oldLikedUser,
+        });
+        return true;
+      }
+      folder.update({
+        "likes": oldPost.likes + 1,
+        "likedUsers": [...oldLikedUser, likedUserId],
+      });
+      return true;
+    } catch (e) {
+      debugPrint("DB ERROR: $e");
+      return false;
     }
   }
 }

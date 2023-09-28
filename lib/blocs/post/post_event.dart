@@ -23,6 +23,7 @@ class CreatePostEvent extends PostEvent {
 
 class PostIsPublicEvent extends PostEvent {
   final bool isPublic;
+
   const PostIsPublicEvent(this.isPublic);
 
   @override
@@ -31,6 +32,7 @@ class PostIsPublicEvent extends PostEvent {
 
 class DeletePostEvent extends PostEvent {
   final String postId;
+
   const DeletePostEvent(this.postId);
 
   @override
@@ -54,11 +56,52 @@ class UpdatePostEvent extends PostEvent {
   List<Object?> get props => [postId, title, content, isPublic];
 }
 
-
 class ViewImagePostEvent extends PostEvent {
   final File file;
+
   const ViewImagePostEvent(this.file);
 
   @override
   List<Object?> get props => [file];
+}
+
+class WriteCommentPostEvent extends PostEvent {
+  final String postId;
+  final String message;
+  final List<Message> old;
+
+  const WriteCommentPostEvent(this.postId, this.message, this.old);
+
+  @override
+  List<Object?> get props => [postId, message, old];
+}
+
+class DeleteCommentPostEvent extends PostEvent {
+  final String postId;
+  final String messageId;
+  final List<Message> old;
+
+  const DeleteCommentPostEvent(this.postId, this.messageId, this.old);
+
+  @override
+  List<Object?> get props => [postId, messageId, old];
+}
+
+class LikePostEvent extends PostEvent {
+  final String postId;
+  final String likedUserId;
+  final List<String> oldLikedUser;
+
+  const LikePostEvent(
+    this.postId,
+    this.likedUserId,
+    this.oldLikedUser,
+  );
+
+  @override
+  List<Object?> get props => [
+        postId,
+        likedUserId,
+        oldLikedUser,
+      ];
 }

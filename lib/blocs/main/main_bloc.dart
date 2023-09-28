@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_post/models/post_model.dart';
 import 'package:firebase_post/services/db_service.dart';
 
 part 'main_event.dart';
-
 part 'main_state.dart';
 
 class MainBloc extends Bloc<MainEvent, MainState> {
@@ -21,12 +22,12 @@ class MainBloc extends Bloc<MainEvent, MainState> {
       final list = await DBService.readAllPost();
       emit(FetchDataSuccess(list, "Successfully fetched!"));
     } catch (e) {
-      emit(MainFailure(state.items, "Something error, try again later"));
+     emit(MainFailure(state.items, "Something error, try again later"));
     }
   }
 
   void _searchPost(SearchMainEvent event, Emitter emit) async {
-    final type = state is MyPostSuccess ? SearchType.me : SearchType.all;
+    final type = state is MyPostSuccess ? SearchType.me: SearchType.all;
 
     emit(MainLoading(state.items));
     try {

@@ -2,9 +2,12 @@ import 'package:firebase_post/blocs/auth/auth_bloc.dart';
 import 'package:firebase_post/blocs/main/main_bloc.dart';
 import 'package:firebase_post/blocs/post/post_bloc.dart';
 import 'package:firebase_post/pages/detail_page.dart';
+import 'package:firebase_post/pages/post_page.dart';
 import 'package:firebase_post/pages/sign_in_page.dart';
+import 'package:firebase_post/services/auth_service.dart';
 import 'package:firebase_post/services/db_service.dart';
 import 'package:firebase_post/services/strings.dart';
+import 'package:firebase_post/views/warning_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,89 +26,6 @@ class _HomePageState extends State<HomePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     context.read<MainBloc>().add(const AllPublicPostEvent());
-  }
-
-  void showWarningDialog(BuildContext ctx) {
-    final controller = TextEditingController();
-    showDialog(
-      context: ctx,
-      builder: (context) {
-        return BlocConsumer<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is DeleteAccountSuccess) {
-              Navigator.of(context).pop();
-              if (ctx.mounted) {
-                Navigator.of(ctx).pushReplacement(
-                    MaterialPageRoute(builder: (context) => SignInPage()));
-              }
-            }
-
-            if (state is AuthFailure) {
-              Navigator.of(context).pop();
-              Navigator.of(ctx).pop();
-            }
-          },
-          builder: (context, state) {
-            return Stack(
-              children: [
-                AlertDialog(
-                  title: const Text(I18N.deleteAccount),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(state is DeleteConfirmSuccess
-                          ? I18N.requestPassword
-                          : I18N.deleteAccountWarning),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      if (state is DeleteConfirmSuccess)
-                        TextField(
-                          controller: controller,
-                          decoration:
-                              const InputDecoration(hintText: I18N.password),
-                        ),
-                    ],
-                  ),
-                  actionsAlignment: MainAxisAlignment.spaceBetween,
-                  actions: [
-                    /// #cancel
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(I18N.cancel),
-                    ),
-
-                    /// #confirm #delete
-                    ElevatedButton(
-                      onPressed: () {
-                        if (state is DeleteConfirmSuccess) {
-                          context
-                              .read<AuthBloc>()
-                              .add(DeleteAccountEvent(controller.text.trim()));
-                        } else {
-                          context
-                              .read<AuthBloc>()
-                              .add(const DeleteConfirmEvent());
-                        }
-                      },
-                      child: Text(state is DeleteConfirmSuccess
-                          ? I18N.delete
-                          : I18N.confirm),
-                    ),
-                  ],
-                ),
-                if (state is AuthLoading)
-                  const Center(
-                    child: CircularProgressIndicator(),
-                  )
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
   @override
@@ -195,7 +115,7 @@ class _HomePageState extends State<HomePage> {
           ),
           BlocListener<PostBloc, PostState>(
             listener: (context, state) {
-              if (state is DeletePostSuccess) {
+              if (state is DeletePostSuccess || state is LikePostSuccess) {
                 if (type == SearchType.all) {
                   context.read<MainBloc>().add(const AllPublicPostEvent());
                 } else {
@@ -219,38 +139,82 @@ class _HomePageState extends State<HomePage> {
                   itemCount: state.items.length,
                   itemBuilder: (context, index) {
                     final post = state.items[index];
-                    return Card(
-                      child: ListTile(
-                        onLongPress: () {
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => DetailPage(post: post)));
-                        },
-                        leading: Image.network(post.imageUrl),
-                        title: Text(post.title),
-                        subtitle: Text(post.content),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                    return GestureDetector(
+                      onLongPress: () {
+                        // Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailPage(post: post)));
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => PostPage(post: post)));
+                      },
+                      child: Card(
+                        child: Column(
                           children: [
-                            IconButton(
-                              onPressed: () {
-                                context.read<PostBloc>().add(
-                                      DeletePostEvent(post.id),
-                                    );
-                              },
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Colors.red,
+                            Container(
+                              color: Colors
+                                  .primaries[index % Colors.primaries.length],
+                              width: MediaQuery.sizeOf(context).width,
+                              height: MediaQuery.sizeOf(context).width - 30,
+                              child: Image(
+                                image: NetworkImage(post.imageUrl),
+                                fit: BoxFit.cover,
                               ),
                             ),
-                            post.isPublic
-                                ? const Icon(
-                                    CupertinoIcons.lock_open,
-                                    color: Colors.green,
-                                  )
-                                : const Icon(
-                                    CupertinoIcons.lock,
-                                    color: Colors.yellow,
+                            ListTile(
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    post.username,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orangeAccent,
+                                    ),
                                   ),
+                                  Text(post.title),
+                                ],
+                              ),
+                              subtitle: Text(post.content),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  BlocBuilder<PostBloc, PostState>(
+                                    builder: (context, state) {
+                                      return IconButton(
+                                        onPressed: () {
+                                          context.read<PostBloc>().add(
+                                                LikePostEvent(
+                                                  post.id,
+                                                  AuthService.user.uid,
+                                                  post.likedUsers,
+                                                ),
+                                              );
+                                        },
+                                        color: post.likedUsers
+                                                .contains(AuthService.user.uid)
+                                            ? Colors.red
+                                            : Colors.grey,
+                                        icon: Icon(
+                                          post.likedUsers.contains(
+                                                  AuthService.user.uid)
+                                              ? CupertinoIcons.heart_fill
+                                              : CupertinoIcons.heart,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  if (post.isMe)
+                                    IconButton(
+                                      onPressed: () {
+                                        context
+                                            .read<PostBloc>()
+                                            .add(DeletePostEvent(post.id));
+                                      },
+                                      color: Colors.red,
+                                      icon: const Icon(Icons.delete),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -268,8 +232,9 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const DetailPage()));
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => const DetailPage(),
+          ));
         },
         child: const Icon(Icons.create_outlined),
       ),

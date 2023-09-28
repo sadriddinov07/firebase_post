@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_post/blocs/main/main_bloc.dart';
 import 'package:firebase_post/blocs/post/post_bloc.dart';
 import 'package:firebase_post/models/post_model.dart';
+import 'package:firebase_post/pages/home_page.dart';
 import 'package:firebase_post/views/custom_text_field_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +55,6 @@ class _DetailPageState extends State<DetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("DetailPage"),
       ),
@@ -69,7 +69,12 @@ class _DetailPageState extends State<DetailPage> {
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Successfully completed!!!")));
             context.read<MainBloc>().add(const AllPublicPostEvent());
-            Navigator.of(context).pop();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomePage(),
+              ),
+            );
           }
 
           if (state is PostIsPublicState) {
@@ -82,10 +87,10 @@ class _DetailPageState extends State<DetailPage> {
             children: [
               GestureDetector(
                 onTap: getImage,
-                child: BlocSelector<PostBloc, PostState, File?>(
-                  selector: (state) =>
-                      state is ViewImagePostSuccess ? state.file : null,
-                  builder: (context, file) {
+                child: BlocBuilder<PostBloc, PostState>(
+                  buildWhen: (previous, current) =>
+                      current is ViewImagePostSuccess,
+                  builder: (context, state) {
                     return Card(
                       child: SizedBox(
                         height: MediaQuery.sizeOf(context).width - 40,
@@ -96,7 +101,7 @@ class _DetailPageState extends State<DetailPage> {
                                 size: 175,
                               )
                             : Image.file(
-                                file,
+                                file!,
                                 fit: BoxFit.cover,
                               ),
                       ),
@@ -117,13 +122,12 @@ class _DetailPageState extends State<DetailPage> {
                     },
                     builder: (context, value) {
                       return Checkbox(
-                        value: value,
-                        onChanged: (value) {
-                          context
-                              .read<PostBloc>()
-                              .add(PostIsPublicEvent(value!));
-                        },
-                      );
+                          value: value,
+                          onChanged: (value) {
+                            context
+                                .read<PostBloc>()
+                                .add(PostIsPublicEvent(value!));
+                          });
                     },
                   ),
                   const SizedBox(width: 10),
