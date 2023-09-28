@@ -30,6 +30,8 @@ sealed class DBService {
         username: username,
         likes: 0,
         likedUsers: [],
+        views: 0,
+        viewedUsers: [],
         imageUrl: imageUrl,
         isPublic: isPublic,
         createdAt: DateTime.now(),
@@ -243,6 +245,33 @@ sealed class DBService {
       folder.update({
         "likes": oldPost.likes + 1,
         "likedUsers": [...oldLikedUser, likedUserId],
+      });
+      return true;
+    } catch (e) {
+      debugPrint("DB ERROR: $e");
+      return false;
+    }
+  }
+
+  /// View
+  static Future<bool> viewPost(
+    String postId,
+    String viewedUserId,
+    List<String> oldViewedUsers,
+  ) async {
+    try {
+      final folder = db.ref(Folder.post).child(postId);
+      final data = await folder.get();
+      final json = jsonDecode(jsonEncode(data.value)) as Map;
+      final oldPost = Post.fromJson(json as Map<String, Object?>);
+      if (oldViewedUsers.contains(viewedUserId)) {
+        debugPrint("DB Warning: User is already liked this comment");
+        return true;
+      }
+      debugPrint("SSSS");
+      folder.update({
+        "views": oldPost.views + 1,
+        "viewedUsers": [...oldViewedUsers, viewedUserId],
       });
       return true;
     } catch (e) {

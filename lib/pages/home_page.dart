@@ -115,7 +115,9 @@ class _HomePageState extends State<HomePage> {
           ),
           BlocListener<PostBloc, PostState>(
             listener: (context, state) {
-              if (state is DeletePostSuccess || state is LikePostSuccess) {
+              if (state is DeletePostSuccess ||
+                  state is LikePostSuccess ||
+                  state is ViewPostSuccess) {
                 if (type == SearchType.all) {
                   context.read<MainBloc>().add(const AllPublicPostEvent());
                 } else {
@@ -141,13 +143,23 @@ class _HomePageState extends State<HomePage> {
                     final post = state.items[index];
                     return GestureDetector(
                       onLongPress: () {
-                        // Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailPage(post: post)));
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => PostPage(post: post)));
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => PostPage(post: post),
+                          ),
+                        );
+                        context.read<PostBloc>().add(
+                              ViewPostEvent(
+                                post.id,
+                                AuthService.user.uid,
+                                post.viewedUsers,
+                              ),
+                            );
                       },
                       child: Card(
                         child: Column(
                           children: [
+                            /// #post image
                             Container(
                               color: Colors
                                   .primaries[index % Colors.primaries.length],
@@ -158,6 +170,8 @@ class _HomePageState extends State<HomePage> {
                                 fit: BoxFit.cover,
                               ),
                             ),
+
+                            /// #post info
                             ListTile(
                               title: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,6 +216,16 @@ class _HomePageState extends State<HomePage> {
                                       );
                                     },
                                   ),
+
+                                  /// #views
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(height: 10),
+                                      const Icon(Icons.remove_red_eye),
+                                      Text(post.views.toString()),
+                                    ],
+                                  ),
                                   if (post.isMe)
                                     IconButton(
                                       onPressed: () {
@@ -221,6 +245,8 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
+
+                /// #loadnig indicator
                 if (state is MainLoading)
                   const Center(
                     child: CircularProgressIndicator(),

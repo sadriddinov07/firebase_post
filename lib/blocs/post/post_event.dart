@@ -105,3 +105,22 @@ class LikePostEvent extends PostEvent {
         oldLikedUser,
       ];
 }
+
+class ViewPostEvent extends PostEvent {
+  final String postId;
+  final String viewedUserId;
+  final List<String> oldViewedUser;
+
+  const ViewPostEvent(
+    this.postId,
+    this.viewedUserId,
+    this.oldViewedUser,
+  );
+
+  @override
+  List<Object?> get props => [
+        postId,
+        viewedUserId,
+        oldViewedUser,
+      ];
+}

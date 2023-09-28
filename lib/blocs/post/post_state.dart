@@ -79,3 +79,11 @@ class LikePostSuccess extends PostState {
   @override
   List<Object> get props => [];
 }
+
+
+class ViewPostSuccess extends PostState {
+  const ViewPostSuccess();
+
+  @override
+  List<Object> get props => [];
+}

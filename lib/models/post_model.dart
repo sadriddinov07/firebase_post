@@ -8,6 +8,9 @@ class Post {
   final String username;
   int likes;
   List<String> likedUsers;
+  int views;
+  List<String> viewedUsers;
+
   final String imageUrl;
   final bool isPublic;
   final bool isMe;
@@ -23,6 +26,8 @@ class Post {
     required this.username,
     required this.likes,
     required this.likedUsers,
+    required this.views,
+    required this.viewedUsers,
     required this.imageUrl,
     required this.isPublic,
     required this.createdAt,
@@ -39,6 +44,10 @@ class Post {
       likes: json["likes"] as int,
       likedUsers: json["likedUsers"] != null
           ? (json["likedUsers"] as List).map((e) => e as String).toList()
+          : [],
+      views: json["views"] as int,
+      viewedUsers: json["viewedUsers"] != null
+          ? (json["viewedUsers"] as List).map((e) => e as String).toList()
           : [],
       imageUrl: json["imageUrl"] as String,
       isPublic: json["isPublic"] as bool,
@@ -60,6 +69,8 @@ class Post {
         "username": username,
         "likes": likes,
         "likedUsers": likedUsers,
+        "views": views,
+        "viewedUsers": viewedUsers,
         "imageUrl": imageUrl,
         "isPublic": isPublic,
         "comments": comments.map((e) => e.toJson()).toList(),

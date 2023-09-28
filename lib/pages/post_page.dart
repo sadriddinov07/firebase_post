@@ -170,6 +170,7 @@ class PostPage extends StatelessWidget {
                     );
                   }
 
+
                   return Row(
                     children: [
                       Expanded(

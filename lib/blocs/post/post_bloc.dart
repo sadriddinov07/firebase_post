@@ -19,6 +19,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<WriteCommentPostEvent>(_writeComment);
     on<DeleteCommentPostEvent>(_deleteComment);
     on<LikePostEvent>(_likePost);
+    on<ViewPostEvent>(_viewPost);
   }
 
   void _createPost(CreatePostEvent event, Emitter emit) async {
@@ -96,6 +97,20 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     );
     if (result) {
       emit(const LikePostSuccess());
+    } else {
+      emit(const PostFailure("Something error, tyr again later!!!"));
+    }
+  }
+
+  void _viewPost(ViewPostEvent event, Emitter emit) async {
+    emit(PostLoading());
+    final result = await DBService.viewPost(
+      event.postId,
+      event.viewedUserId,
+      event.oldViewedUser,
+    );
+    if (result) {
+      emit(const ViewPostSuccess());
     } else {
       emit(const PostFailure("Something error, tyr again later!!!"));
     }
